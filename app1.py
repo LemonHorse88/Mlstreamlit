@@ -48,7 +48,7 @@ historical_deaths = np.random.randint(500, 2000, size=30)
 df_historical = pd.DataFrame({"cases": historical_cases, "deaths": historical_deaths})
 df_historical["day"] = range(1, 31)
 
-# Binarize cases for logistic regression (above or below mean cases)
+# Preparing data for logistic regression
 df_historical["high_case"] = (df_historical["cases"] > df_historical["cases"].mean()).astype(int)
 
 # Splitting data
@@ -60,19 +60,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = LogisticRegression()
 model.fit(X_train, y_train)
 
-# Predict next day's case category
+# Predict probability of high cases for the next day
 next_day = np.array([[31]])
-predicted_class = model.predict(next_day)
-predicted_label = "High Cases" if predicted_class[0] == 1 else "Low Cases"
-print(f"Predicted case category for Day 31: {predicted_label}")
+predicted_prob = model.predict_proba(next_day)[0][1]  # Probability of high cases
+predicted_cases = int(predicted_prob * max(df_historical["cases"]))  # Scale to case count
+print(f"Predicted cases for Day 31: {predicted_cases}")
 
 # Streamlit App
 st.title("COVID-19 Cases Prediction in USA")
-st.write("Predicting whether the next day's cases will be high or low based on historical data.")
+st.write("Predicting COVID-19 cases for the next day based on historical data.")
 
 day_input = st.number_input("Enter day number (e.g., 31 for prediction)", min_value=1, max_value=100)
 
 if st.button("Predict"):
-    prediction = model.predict([[day_input]])
-    label = "High Cases" if prediction[0] == 1 else "Low Cases"
-    st.write(f"Predicted category for day {day_input}: {label}")
+    prediction_prob = model.predict_proba([[day_input]])[0][1]
+    predicted_cases = int(prediction_prob * max(df_historical["cases"]))
+    st.write(f"Predicted cases for day {day_input}: {predicted_cases}")
